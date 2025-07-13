@@ -1,0 +1,1 @@
+A to-do list is a classic example of a CRUD application. This repository was created to apply what I have learned at college in terms of software design, and mainly to teach myself JavaFX through a simple approach.
