@@ -57,11 +57,14 @@ jobs:
             --runtime-image runtime-mac \
             --icon src/main/resources/icon.icns
 
+      - name: Rename .app directory for release
+        run: mv dist/mac/TodoList.app dist/mac/TodoList-mac.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-mac
-          path: dist/mac/TodoList.app
+          path: dist/mac/TodoList-mac.app
 
   build-windows:
     name: Build on Windows
@@ -105,7 +108,7 @@ jobs:
             --strip-debug --compress=2 --no-header-files --no-man-pages
 
           jpackage `
-            --type app-image `
+            --type exe `
             --input target `
             --dest dist/win `
             --name TodoList `
@@ -114,11 +117,14 @@ jobs:
             --runtime-image runtime-win `
             --icon src/main/resources/icon.ico
 
+      - name: Rename .exe for release
+        run: Rename-Item dist\win\TodoList.exe TodoList-windows.exe
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-windows
-          path: dist/win/TodoList
+          path: dist/win/TodoList-windows.exe
 
   build-linux:
     name: Build on Linux
@@ -162,7 +168,7 @@ jobs:
             --strip-debug --compress=2 --no-header-files --no-man-pages
 
           jpackage \
-            --type app-image \
+            --type deb \
             --input target \
             --dest dist/linux \
             --name TodoList \
@@ -171,11 +177,14 @@ jobs:
             --runtime-image runtime-linux \
             --icon src/main/resources/icon.png
 
+      - name: Rename .deb for release
+        run: mv dist/linux/TodoList_*.deb dist/linux/TodoList-linux.deb
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-linux
-          path: dist/linux/TodoList
+          path: dist/linux/TodoList-linux.deb
 
   release:
     name: Create GitHub Release
@@ -197,8 +206,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            dist/TodoList-mac/TodoList.app
-            dist/TodoList-windows/TodoList.exe
-            dist/TodoList-linux/TodoList.deb
+            dist/TodoList-mac/TodoList-mac.app
+            dist/TodoList-windows/TodoList-windows.exe
+            dist/TodoList-linux/TodoList-linux.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
