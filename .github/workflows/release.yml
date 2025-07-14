@@ -177,7 +177,7 @@ jobs:
           name: TodoList-linux
           path: dist/linux/TodoList
 
-  release:
+    release:
     name: Create GitHub Release
     needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
@@ -193,9 +193,9 @@ jobs:
       - name: Zip each build artifact
         run: |
           cd dist
-          zip -r TodoList-mac.zip "TodoList-mac/TodoList.app"
-          zip -r TodoList-windows.zip "TodoList-windows/TodoList"
-          zip -r TodoList-linux.zip "TodoList-linux/TodoList"
+          zip -r TodoList-mac.zip "TodoList-mac/mac/TodoList.app"
+          zip -r TodoList-windows.zip "TodoList-windows/win/TodoList"
+          zip -r TodoList-linux.zip "TodoList-linux/linux/TodoList"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
