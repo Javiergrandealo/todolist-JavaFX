@@ -18,12 +18,12 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_osx-x64_bin-sdk.zip -o javafx.zip
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
 
-          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_osx-x64_bin-jmods.zip -o jmods.zip
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
       - name: Cache Maven dependencies
@@ -31,21 +31,18 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Package macOS app
-        run: |
-          mkdir -p dist/mac
-          if [ -d "dist/mac/TodoList.app" ]; then
-            rm -rf dist/mac/TodoList.app
-          fi
+      - name: Remove existing .app if exists
+        run: rm -rf dist/mac/TodoList.app
 
+      - name: Package app with jpackage
+        run: |
           jlink \
-            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-24.0.1 \
+            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-mac \
             --strip-debug --compress=2 --no-header-files --no-man-pages
@@ -60,7 +57,7 @@ jobs:
             --runtime-image runtime-mac \
             --icon src/main/resources/icon.icns
 
-      - name: Upload macOS build
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-mac
@@ -78,12 +75,12 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
           Expand-Archive javafx.zip -DestinationPath javafx
 
-          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
           Expand-Archive jmods.zip -DestinationPath javafx-jmods
 
       - name: Cache Maven dependencies
@@ -91,21 +88,18 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Package Windows app
-        run: |
-          mkdir dist\win
-          if (Test-Path "dist\win\TodoList.exe") {
-            Remove-Item "dist\win\TodoList.exe" -Force
-          }
+      - name: Remove existing .exe if exists
+        run: Remove-Item -Recurse -Force dist\win\TodoList.exe -ErrorAction SilentlyContinue
 
+      - name: Package app with jpackage
+        run: |
           jlink `
-            --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-24.0.1" `
+            --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-21.0.1" `
             --add-modules java.base,javafx.controls,javafx.fxml `
             --output runtime-win `
             --strip-debug --compress=2 --no-header-files --no-man-pages
@@ -113,14 +107,14 @@ jobs:
           jpackage `
             --type exe `
             --input target `
-            --dest dist\win `
+            --dest dist/win `
             --name TodoList `
             --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar `
             --main-class com.todo.javiergrande.Main `
             --runtime-image runtime-win `
             --icon src/main/resources/icon.ico
 
-      - name: Upload Windows build
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-windows
@@ -138,12 +132,12 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_linux-x64_bin-sdk.zip -o javafx.zip
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
 
-          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_linux-x64_bin-jmods.zip -o jmods.zip
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
       - name: Cache Maven dependencies
@@ -151,21 +145,18 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Package Linux app
-        run: |
-          mkdir -p dist/linux
-          if [ -d "dist/linux/TodoList" ]; then
-            rm -rf dist/linux/TodoList
-          fi
+      - name: Remove existing app dir if exists
+        run: rm -rf dist/linux/TodoList
 
+      - name: Package app with jpackage
+        run: |
           jlink \
-            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-24.0.1 \
+            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-linux \
             --strip-debug --compress=2 --no-header-files --no-man-pages
@@ -180,7 +171,7 @@ jobs:
             --runtime-image runtime-linux \
             --icon src/main/resources/icon.png
 
-      - name: Upload Linux build
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TodoList-linux
