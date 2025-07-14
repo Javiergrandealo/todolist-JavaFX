@@ -7,7 +7,6 @@ on:
 
 jobs:
   build-macos:
-    name: Build on macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +21,6 @@ jobs:
         run: |
           curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
-
           curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
@@ -36,17 +34,14 @@ jobs:
       - name: Build project
         run: mvn clean package
 
-      - name: Remove existing .app if exists
-        run: rm -rf dist/mac/TodoList.app
-
-      - name: Package app with jpackage
+      - name: Build macOS .app
         run: |
+          rm -rf dist/mac/TodoList.app
           jlink \
             --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-mac \
             --strip-debug --compress=2 --no-header-files --no-man-pages
-
           jpackage \
             --type app-image \
             --input target \
@@ -57,17 +52,13 @@ jobs:
             --runtime-image runtime-mac \
             --icon src/main/resources/icon.icns
 
-      - name: Rename .app directory for release
-        run: mv dist/mac/TodoList.app dist/mac/TodoList-mac.app
-
-      - name: Upload artifact
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TodoList-mac
-          path: dist/mac/TodoList-mac.app
+          name: mac
+          path: dist/mac/TodoList.app
 
   build-windows:
-    name: Build on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +73,6 @@ jobs:
         run: |
           Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
           Expand-Archive javafx.zip -DestinationPath javafx
-
           Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
           Expand-Archive jmods.zip -DestinationPath javafx-jmods
 
@@ -96,17 +86,14 @@ jobs:
       - name: Build project
         run: mvn clean package
 
-      - name: Remove existing app if exists
-        run: Remove-Item -Recurse -Force dist\win\TodoList -ErrorAction SilentlyContinue
-
-      - name: Package app with jpackage
+      - name: Build Windows .exe
         run: |
+          Remove-Item -Recurse -Force dist\win\TodoList.exe -ErrorAction SilentlyContinue
           jlink `
             --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-21.0.1" `
             --add-modules java.base,javafx.controls,javafx.fxml `
             --output runtime-win `
             --strip-debug --compress=2 --no-header-files --no-man-pages
-
           jpackage `
             --type exe `
             --input target `
@@ -117,17 +104,13 @@ jobs:
             --runtime-image runtime-win `
             --icon src/main/resources/icon.ico
 
-      - name: Rename .exe for release
-        run: Rename-Item dist\win\TodoList.exe TodoList-windows.exe
-
-      - name: Upload artifact
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TodoList-windows
-          path: dist/win/TodoList-windows.exe
+          name: win
+          path: dist/win/TodoList.exe
 
   build-linux:
-    name: Build on Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,7 +125,6 @@ jobs:
         run: |
           curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
-
           curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
@@ -156,17 +138,14 @@ jobs:
       - name: Build project
         run: mvn clean package
 
-      - name: Remove existing app if exists
-        run: rm -rf dist/linux/TodoList
-
-      - name: Package app with jpackage
+      - name: Build Linux .deb
         run: |
+          rm -rf dist/linux
           jlink \
             --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-linux \
             --strip-debug --compress=2 --no-header-files --no-man-pages
-
           jpackage \
             --type deb \
             --input target \
@@ -177,27 +156,20 @@ jobs:
             --runtime-image runtime-linux \
             --icon src/main/resources/icon.png
 
-      - name: Rename .deb for release
-        run: mv dist/linux/TodoList_*.deb dist/linux/TodoList-linux.deb
-
-      - name: Upload artifact
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TodoList-linux
-          path: dist/linux/TodoList-linux.deb
+          name: linux
+          path: dist/linux/TodoList*.deb
 
   release:
-    name: Create GitHub Release
-    needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
+    needs: [build-macos, build-windows, build-linux]
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
-
-      - name: List downloaded files
-        run: ls -R dist
+          path: artifacts
 
       - name: Create GitHub Release with binaries
         uses: softprops/action-gh-release@v2
@@ -206,8 +178,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            dist/TodoList-mac/TodoList-mac.app
-            dist/TodoList-windows/TodoList-windows.exe
-            dist/TodoList-linux/TodoList-linux.deb
+            artifacts/mac/TodoList.app/**
+            artifacts/win/TodoList.exe
+            artifacts/linux/TodoList*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
