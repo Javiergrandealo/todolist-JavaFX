@@ -8,11 +8,11 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.file.*;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Clase con la persistncia para el guardado de archivos al cerrar y abrir el programa utilizando la libreria Gson que
  * transforma de JSON a objeto y de objeto a JSON
- *
  * Los archivos guardados de encriptan para mayor seguridad
  */
 public class TaskStorage {
@@ -51,8 +51,12 @@ public class TaskStorage {
      */
     public static List<TodoItem> load(String fileName) throws IOException {
         Path filePath = USER_DIR.resolve(fileName);
+
+        // Asegurarse de que la carpeta existe
+        Files.createDirectories(USER_DIR);
+
         File file = filePath.toFile();
-        if (!file.exists()) return new java.util.ArrayList<>();
+        if (!file.exists()) return new ArrayList<>();
 
         byte[] cifrado = new byte[(int) file.length()];
         try (FileInputStream fis = new FileInputStream(file)) {
@@ -60,6 +64,7 @@ public class TaskStorage {
         }
 
         String json = EncryptionUtil.decrypt(cifrado);
-        return gson.fromJson(json, LIST_TYPE);
+        List<TodoItem> lista = gson.fromJson(json, LIST_TYPE);
+        return lista != null ? lista : new ArrayList<>();
     }
 }

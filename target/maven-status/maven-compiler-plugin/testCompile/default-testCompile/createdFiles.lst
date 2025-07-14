@@ -1,0 +1,6 @@
+com/todo/javiergrande/model/TodoItemTest.class
+com/todo/javiergrande/controller/TodoControllerTest.class
+com/todo/javiergrande/model/TodoModelTest.class
+com/todo/javiergrande/persistence/EncryptionUtilTest.class
+com/todo/javiergrande/persistence/TaskStorageTest.class
+com/todo/javiergrande/model/CompletedModelTest.class
