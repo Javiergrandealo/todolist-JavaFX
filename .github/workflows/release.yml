@@ -187,14 +187,15 @@ jobs:
         with:
           path: dist
 
-      - name: List files
+      - name: List downloaded files
         run: ls -R dist
 
-      - name: Zip app bundles
+      - name: Zip each build artifact
         run: |
-          cd dist/TodoList-mac && zip -r ../../TodoList-mac.zip TodoList.app
-          cd ../TodoList-windows && zip -r ../../TodoList-windows.zip TodoList
-          cd ../TodoList-linux && zip -r ../../TodoList-linux.zip TodoList
+          cd dist
+          zip -r TodoList-mac.zip "TodoList-mac/TodoList.app"
+          zip -r TodoList-windows.zip "TodoList-windows/TodoList"
+          zip -r TodoList-linux.zip "TodoList-linux/TodoList"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -203,8 +204,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            TodoList-mac.zip
-            TodoList-windows.zip
-            TodoList-linux.zip
+            dist/TodoList-mac.zip
+            dist/TodoList-windows.zip
+            dist/TodoList-linux.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
