@@ -16,13 +16,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '22'
+          java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          curl -L https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_osx-x64_bin-sdk.zip -o javafx.zip
+          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_osx-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
-          curl -L https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_osx-x64_bin-jmods.zip -o jmods.zip
+
+          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_osx-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
       - name: Cache Maven dependencies
@@ -30,22 +31,23 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build project with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Create output directory
+      - name: Prepare output directory
         run: mkdir -p dist/mac
 
-      - name: Package macOS app with jpackage
+      - name: Package macOS app
         run: |
           jlink \
-            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-22.0.1 \
+            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-24.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-mac \
             --strip-debug --compress=2 --no-header-files --no-man-pages
+
+          rm -rf dist/mac/TodoList.app
 
           jpackage \
             --type app-image \
@@ -73,13 +75,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '22'
+          java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
           Expand-Archive javafx.zip -DestinationPath javafx
-          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
+
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
           Expand-Archive jmods.zip -DestinationPath javafx-jmods
 
       - name: Cache Maven dependencies
@@ -87,31 +90,32 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build project with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Create output directory
-        run: mkdir -p dist/win
+      - name: Prepare output directory
+        run: mkdir dist\win
 
-      - name: Package Windows app with jpackage
+      - name: Package Windows app
         run: |
-          jlink \
-            --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-22.0.1" \
-            --add-modules java.base,javafx.controls,javafx.fxml \
-            --output runtime-win \
+          jlink `
+            --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-24.0.1" `
+            --add-modules java.base,javafx.controls,javafx.fxml `
+            --output runtime-win `
             --strip-debug --compress=2 --no-header-files --no-man-pages
 
-          jpackage \
-            --type exe \
-            --input target \
-            --dest dist/win \
-            --name TodoList \
-            --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar \
-            --main-class com.todo.javiergrande.Main \
-            --runtime-image runtime-win \
+          Remove-Item -Recurse -Force dist\win\TodoList.exe -ErrorAction SilentlyContinue
+
+          jpackage `
+            --type exe `
+            --input target `
+            --dest dist\win `
+            --name TodoList `
+            --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar `
+            --main-class com.todo.javiergrande.Main `
+            --runtime-image runtime-win `
             --icon src/main/resources/icon.ico
 
       - name: Upload Windows build
@@ -130,13 +134,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '22'
+          java-version: '17'
 
-      - name: Download JavaFX SDK & JMODs
+      - name: Download JavaFX SDK and JMODs
         run: |
-          curl -L https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_linux-x64_bin-sdk.zip -o javafx.zip
+          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_linux-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
-          curl -L https://download2.gluonhq.com/openjfx/22.0.1/openjfx-22.0.1_linux-x64_bin-jmods.zip -o jmods.zip
+
+          curl -L https://download2.gluonhq.com/openjfx/24.0.1/openjfx-24.0.1_linux-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
       - name: Cache Maven dependencies
@@ -144,22 +149,23 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build project with Maven
+      - name: Build project
         run: mvn clean package
 
-      - name: Create output directory
+      - name: Prepare output directory
         run: mkdir -p dist/linux
 
-      - name: Package Linux app with jpackage
+      - name: Package Linux app
         run: |
           jlink \
-            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-22.0.1 \
+            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-24.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
             --output runtime-linux \
             --strip-debug --compress=2 --no-header-files --no-man-pages
+
+          rm -rf dist/linux/TodoList
 
           jpackage \
             --type app-image \
