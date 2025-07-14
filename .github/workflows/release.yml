@@ -6,15 +6,9 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    name: Build and Package for all platforms
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    defaults:
-      run:
-        shell: bash
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -24,34 +18,126 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Set platform-specific variables
-        id: vars
+      - name: Download JavaFX SDK and JMODs
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            echo "FX_URL=https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin" >> $GITHUB_ENV
-            echo "EXT=png" >> $GITHUB_ENV
-            echo "JPACKAGE_TYPE=app-image" >> $GITHUB_ENV
-            echo "OUT=TodoList" >> $GITHUB_ENV
-            echo "RUNTIME=runtime-linux" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "FX_URL=https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin" >> $GITHUB_ENV
-            echo "EXT=icns" >> $GITHUB_ENV
-            echo "JPACKAGE_TYPE=app-image" >> $GITHUB_ENV
-            echo "OUT=TodoList.app" >> $GITHUB_ENV
-            echo "RUNTIME=runtime-mac" >> $GITHUB_ENV
-          else
-            echo "FX_URL=https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin" >> $GITHUB_ENV
-            echo "EXT=ico" >> $GITHUB_ENV
-            echo "JPACKAGE_TYPE=exe" >> $GITHUB_ENV
-            echo "OUT=TodoList.exe" >> $GITHUB_ENV
-            echo "RUNTIME=runtime-win" >> $GITHUB_ENV
-          fi
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-sdk.zip -o javafx.zip
+          unzip javafx.zip -d javafx
+
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_osx-x64_bin-jmods.zip -o jmods.zip
+          unzip jmods.zip -d javafx-jmods
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Build project
+        run: mvn clean package
+
+      - name: Remove existing .app if exists
+        run: rm -rf dist/mac/TodoList.app
+
+      - name: Package app with jpackage
+        run: |
+          jlink \
+            --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
+            --add-modules java.base,javafx.controls,javafx.fxml \
+            --output runtime-mac \
+            --strip-debug --compress=2 --no-header-files --no-man-pages
+
+          jpackage \
+            --type app-image \
+            --input target \
+            --dest dist/mac \
+            --name TodoList \
+            --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar \
+            --main-class com.todo.javiergrande.Main \
+            --runtime-image runtime-mac \
+            --icon src/main/resources/icon.icns
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TodoList-mac
+          path: dist/mac/TodoList.app
+
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
       - name: Download JavaFX SDK and JMODs
         run: |
-          curl -L $FX_URL-sdk.zip -o javafx.zip
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-sdk.zip -OutFile javafx.zip
+          Expand-Archive javafx.zip -DestinationPath javafx
+
+          Invoke-WebRequest -Uri https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_windows-x64_bin-jmods.zip -OutFile jmods.zip
+          Expand-Archive jmods.zip -DestinationPath javafx-jmods
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Build project
+        run: mvn clean package
+
+      - name: Remove existing app if exists
+        run: Remove-Item -Recurse -Force dist\win\TodoList -ErrorAction SilentlyContinue
+
+      - name: Package app with jpackage
+        run: |
+          jlink `
+            --module-path "$Env:JAVA_HOME\jmods;javafx-jmods\javafx-jmods-21.0.1" `
+            --add-modules java.base,javafx.controls,javafx.fxml `
+            --output runtime-win `
+            --strip-debug --compress=2 --no-header-files --no-man-pages
+
+          jpackage `
+            --type app-image `
+            --input target `
+            --dest dist/win `
+            --name TodoList `
+            --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar `
+            --main-class com.todo.javiergrande.Main `
+            --runtime-image runtime-win `
+            --icon src/main/resources/icon.ico
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TodoList-windows
+          path: dist/win/TodoList
+
+  build-linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Download JavaFX SDK and JMODs
+        run: |
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-sdk.zip -o javafx.zip
           unzip javafx.zip -d javafx
-          curl -L $FX_URL-jmods.zip -o jmods.zip
+
+          curl -L https://download2.gluonhq.com/openjfx/21.0.1/openjfx-21.0.1_linux-x64_bin-jmods.zip -o jmods.zip
           unzip jmods.zip -d javafx-jmods
 
       - name: Cache Maven dependencies
@@ -65,38 +151,54 @@ jobs:
         run: mvn clean package
 
       - name: Remove existing app if exists
-        run: rm -rf dist/${{ matrix.os == 'windows-latest' && 'win' || matrix.os == 'macos-latest' && 'mac' || 'linux' }}/$OUT || true
+        run: rm -rf dist/linux/TodoList
 
-      - name: Create runtime with jlink
+      - name: Package app with jpackage
         run: |
           jlink \
             --module-path $JAVA_HOME/jmods:javafx-jmods/javafx-jmods-21.0.1 \
             --add-modules java.base,javafx.controls,javafx.fxml \
-            --output $RUNTIME \
+            --output runtime-linux \
             --strip-debug --compress=2 --no-header-files --no-man-pages
 
-      - name: Package app with jpackage
-        run: |
-          mkdir -p dist/${{ matrix.os == 'windows-latest' && 'win' || matrix.os == 'macos-latest' && 'mac' || 'linux' }}
           jpackage \
-            --type $JPACKAGE_TYPE \
+            --type app-image \
             --input target \
-            --dest dist/${{ matrix.os == 'windows-latest' && 'win' || matrix.os == 'macos-latest' && 'mac' || 'linux' }} \
+            --dest dist/linux \
             --name TodoList \
             --main-jar todolist-1.0-SNAPSHOT-jar-with-dependencies.jar \
             --main-class com.todo.javiergrande.Main \
-            --runtime-image $RUNTIME \
-            --icon src/main/resources/icon.$EXT
+            --runtime-image runtime-linux \
+            --icon src/main/resources/icon.png
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TodoList-${{ matrix.os }}
-          path: dist/${{ matrix.os == 'windows-latest' && 'win/TodoList.exe' || matrix.os == 'macos-latest' && 'mac/TodoList.app' || 'linux/TodoList' }}
+          name: TodoList-linux
+          path: dist/linux/TodoList
 
-      - name: Upload to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+  release:
+    name: Create GitHub Release
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: List files
+        run: ls -R dist
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
           files: |
-            dist/**/TodoList*
+            dist/TodoList-mac/TodoList.app/**
+            dist/TodoList-windows/TodoList/**
+            dist/TodoList-linux/TodoList/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
