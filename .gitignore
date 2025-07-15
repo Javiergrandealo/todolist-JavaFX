@@ -6,4 +6,4 @@ build-windows.sh
 build-macos.sh
 dist/
 runtime-mac/
-generariconos.sh
+generarIconos.sh
