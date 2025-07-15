@@ -1,10 +1,10 @@
 com/todo/javiergrande/persistence/TaskStorage.class
 com/todo/javiergrande/persistence/TaskStorage$1.class
-com/todo/javiergrande/model/TaskModel.class
-com/todo/javiergrande/model/TodoModel.class
 com/todo/javiergrande/model/CompletedModel.class
 com/todo/javiergrande/view/TodoView.class
-com/todo/javiergrande/model/TodoItem.class
 com/todo/javiergrande/persistence/EncryptionUtil.class
 com/todo/javiergrande/controller/TodoController.class
+com/todo/javiergrande/model/TaskModel.class
+com/todo/javiergrande/model/TodoModel.class
+com/todo/javiergrande/model/TodoItem.class
 com/todo/javiergrande/Main.class

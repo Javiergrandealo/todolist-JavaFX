@@ -1,3 +1,8 @@
 .DS_Store
 .idea/
 userfiles/
+build-linux.sh
+build-windows.sh
+build-macos.sh
+dist/
+runtime-mac/
